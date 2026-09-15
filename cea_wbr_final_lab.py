@@ -440,7 +440,10 @@ class UnifiedWBRResearchLab(tk.Tk):
             self.sweep_df.to_csv(fname, index=False)
             messagebox.showinfo("Exported", f"Optimization sweep exported to: {fname}")
 
-if __name__ == '__main__':
+def main():
     app = UnifiedWBRResearchLab()
     app.mainloop()
+
+if __name__ == '__main__':
+    main()
 

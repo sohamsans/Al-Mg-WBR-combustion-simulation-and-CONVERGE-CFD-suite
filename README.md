@@ -34,107 +34,124 @@ Water-breathing ramjet (WBR) engines utilize surrounding liquid water as an oxid
    Downstream of the primary nozzle, the expelled molten metal droplets react vigorously with ingested ambient water, generating superheated steam, hydrogen gas, and substantial secondary thrust.
 
 ### The Metal Combustion Dilemma: Expulsion vs. Slag Accumulation
-A critical design challenge in primary chamber engineering is maintaining metallic fuel expulsion efficiency. If the metal particles burn excessively in the primary combustor:
-- The energy available for secondary reaction with ingested water is depleted, diminishing the ramjet benefit.
-- Molten droplets coalesce and oxidize, forming refractory oxides (Al2O3 and MgO) that deposit on the combustor walls and nozzle throat as slag, degrading nozzle throat geometry and causing thermal damage.
+A critical design challenge in primary chamber engineering is maintaining metallic fuel expulsion efficiency:
+* Excess combustion of metal particles in the primary combustor depletes the energy available for secondary reaction with ingested water, diminishing the overall ramjet benefit.
+* Molten droplets coalesce and oxidize, forming refractory oxides ($\text{Al}_2\text{O}_3$ and $\text{MgO}$) that deposit on the combustor walls and nozzle throat as slag, degrading nozzle throat geometry and causing thermal damage.
 
-Conversely, if the propellant does not ignite sufficiently, primary flame stability is lost. Magnesium provides a low ignition threshold (approximately 1100 K) and fast reaction kinetics, whereas Aluminum provides high energy density but requires higher temperatures (approximately 2030 K) to dissolve its protective oxide film.
+Conversely, if the propellant does not ignite sufficiently, primary flame stability is lost. Magnesium provides a low ignition threshold (approximately $1100\text{ K}$) and fast reaction kinetics, whereas Aluminum provides high energy density but requires higher temperatures (approximately $2030\text{ K}$) to dissolve its protective oxide film.
 
-This software models the physical trade-off between particle size distribution, chamber length, pressure, and metal composition, providing design boundaries that satisfy the research requirement of at least 90% metal expulsion efficiency while minimizing slag deposition.
+This software models the physical trade-off between particle size distribution, chamber length, pressure, and metal composition, providing design boundaries that satisfy the research requirement of at least $90\%$ metal expulsion efficiency while minimizing slag deposition.
 
 ---
 
 ## 2. Physics and Mathematical Formulations
 
 ### 2.1 Thermochemical Equilibrium and Elemental Atom Balancing
-NASA Chemical Equilibrium with Applications (CEA) calculates adiabatic flame temperature, gas molecular weight, and thermodynamic properties. To accurately represent blended composite propellants in RocketCEA, the mass percentages of HTPB binder, AP oxidizer, and Al-Mg alloys are converted into stoichiometric elemental mole numbers per 100 grams of fuel mixture:
+NASA Chemical Equilibrium with Applications (CEA) calculates adiabatic flame temperature, gas molecular weight, and thermodynamic properties. To accurately represent blended composite propellants in RocketCEA, the mass percentages of HTPB binder, AP oxidizer, and Al-Mg alloys are converted into stoichiometric elemental mole numbers per $100\text{ g}$ of fuel mixture:
 
-HTPB binder is modeled as C7.07 H10.12 O0.20 with an average molecular weight of 98.32 g/mol and a heat of formation of -12.5 cal/g.
-Ammonium perchlorate (AP) is modeled as NH4ClO4 with a molecular weight of 117.49 g/mol.
+HTPB binder is modeled as $\text{C}_{7.07}\text{H}_{10.12}\text{O}_{0.20}$ with an average molecular weight of $98.32\text{ g/mol}$ and a heat of formation of $-12.5\text{ cal/g}$.
+Ammonium perchlorate (AP) is modeled as $\text{NH}_4\text{ClO}_4$ with a molecular weight of $117.49\text{ g/mol}$.
 
-For a fuel blend with HTPB mass fraction w_HTPB and metal mass fraction (100 - w_HTPB):
-- Moles of HTPB = w_HTPB / 98.32
-- n_C = 7.07 * Moles_HTPB
-- n_H = 10.12 * Moles_HTPB
-- n_O = 0.20 * Moles_HTPB
-- n_Al = w_Al / 26.9815
-- n_Mg = w_Mg / 24.305
-- Bulk Enthalpy h_cal = (w_HTPB * -12.5) / 100.0 [cal/g]
+For a fuel blend with HTPB mass fraction $w_{\text{HTPB}}$ and metal mass fraction $(100 - w_{\text{HTPB}})$:
+
+$$\text{Moles of HTPB} = \frac{w_{\text{HTPB}}}{98.32 \text{ g/mol}}$$
+$$n_{\text{C}} = 7.07 \times \text{Moles}_{\text{HTPB}}$$
+$$n_{\text{H}} = 10.12 \times \text{Moles}_{\text{HTPB}}$$
+$$n_{\text{O}} = 0.20 \times \text{Moles}_{\text{HTPB}}$$
+$$n_{\text{Al}} = \frac{w_{\text{Al}}}{26.9815 \text{ g/mol}}$$
+$$n_{\text{Mg}} = \frac{w_{\text{Mg}}}{24.305 \text{ g/mol}}$$
+$$\text{Bulk Enthalpy } h_{\text{cal}} = \frac{w_{\text{HTPB}} \times (-12.5 \text{ cal/g})}{100.0}$$
 
 The primary gas density is evaluated using the ideal gas equation of state:
-rho_g = (P_c * MW_g) / (R_univ * T_c)
 
-Specific heat capacity at constant pressure is derived from the specific heat ratio gamma:
-c_p = (gamma * R_univ) / ((gamma - 1.0) * MW_g)
+$$\rho_g = \frac{P_c \cdot MW_g}{R_{\text{univ}} \cdot T_c}$$
+
+Specific heat capacity at constant pressure is derived from the specific heat ratio $\gamma$:
+
+$$c_{p,g} = \frac{\gamma R_{\text{univ}}}{(\gamma - 1.0) MW_g}$$
 
 ### 2.2 Al-Mg Alloy Properties and Ignition Kinetics
 Alloy droplets exhibit composition-dependent density and specific heat:
-1 / rho_p = (w_Al / rho_Al) + ((1.0 - w_Al) / rho_Mg)
-c_p,p = w_Al * c_p,Al + (1.0 - w_Al) * c_p,Mg
 
-where rho_Al = 2700 kg/m^3, rho_Mg = 1738 kg/m^3, c_p,Al = 900 J/(kg K), and c_p,Mg = 1020 J/(kg K).
+$$\frac{1}{\rho_p} = \frac{w_{\text{Al}}}{\rho_{\text{Al}}} + \frac{1.0 - w_{\text{Al}}}{\rho_{\text{Mg}}}$$
+$$c_{p,p} = w_{\text{Al}} c_{p,\text{Al}} + (1.0 - w_{\text{Al}}) c_{p,\text{Mg}}$$
 
-Pure Aluminum requires reaching the oxide shell melting point (2030 K) for ignition, while Magnesium vaporizes and ignites at 1100 K. In Al-Mg alloys, Magnesium vapor breakout disrupts the continuous Al2O3 layer. This non-linear transition is modeled as:
-T_ign(w_Al) = T_ign,Mg + (T_ign,Al - T_ign,Mg) * (w_Al)^1.5
+where $\rho_{\text{Al}} = 2700\text{ kg/m}^3$, $\rho_{\text{Mg}} = 1738\text{ kg/m}^3$, $c_{p,\text{Al}} = 900\text{ J/(kg K)}$, and $c_{p,\text{Mg}} = 1020\text{ J/(kg K)}$.
+
+Pure Aluminum requires reaching the oxide shell melting point ($2030\text{ K}$) for ignition, while Magnesium vaporizes and ignites at $1100\text{ K}$. In Al-Mg alloys, Magnesium vapor breakout disrupts the continuous $\text{Al}_2\text{O}_3$ layer. This non-linear transition is modeled as:
+
+$$T_{\text{ign}}(w_{\text{Al}}) = T_{\text{ign,Mg}} + (T_{\text{ign,Al}} - T_{\text{ign,Mg}}) \cdot (w_{\text{Al}})^{1.5}$$
 
 ### 2.3 1D Lagrangian Droplet Dynamics and Drag Acceleration
 The equation of motion for a spherical droplet moving through primary combustion gases is governed by standard aerodynamic drag:
-d(u_p) / dt = (3 / 4) * (rho_g * C_d / (rho_p * d_p)) * (u_g - u_p) * |u_g - u_p|
+
+$$\frac{du_p}{dt} = \frac{3}{4} \cdot \left( \frac{\rho_g C_d}{\rho_p d_p} \right) \cdot (u_g - u_p) \cdot |u_g - u_p|$$
 
 The particle Reynolds number is defined by relative velocity:
-Re_p = (rho_g * |u_g - u_p| * d_p) / mu_g
 
-The drag coefficient C_d is calculated using the Schiller-Naumann correlation:
-- For Re_p < 1000: C_d = (24 / Re_p) * (1.0 + 0.15 * Re_p^0.687)
-- For Re_p >= 1000: C_d = 0.44
+$$Re_p = \frac{\rho_g \cdot |u_g - u_p| \cdot d_p}{\mu_g}$$
 
-Local gas velocity u_g(x) accounts for thermal expansion along the combustor length x:
-u_g(x) = u_g,inlet + (u_g,exit - u_g,inlet) * (x / L_c)
+The drag coefficient $C_d$ is calculated using the Schiller-Naumann correlation:
+* For $Re_p < 1000$: $C_d = \frac{24}{Re_p} \cdot \left(1.0 + 0.15 \cdot Re_p^{0.687}\right)$
+* For $Re_p \ge 1000$: $C_d = 0.44$
+
+Local gas velocity $u_g(x)$ accounts for thermal expansion along the combustor length $x$:
+
+$$u_g(x) = u_{g,\text{inlet}} + (u_{g,\text{exit}} - u_{g,\text{inlet}}) \cdot \left(\frac{x}{L_c}\right)$$
 
 ### 2.4 Convective Heating and Pressure-Scaled d^1.8 Combustion Kinetics
-Prior to ignition (T_p < T_ign), droplet heating is driven by forced convection:
-Nu_p = 2.0 + 0.6 * (Re_p^0.5) * (Pr_g^(1/3))
-h_p = (Nu_p * k_g) / d_p
-d(T_p) / dt = (h_p * pi * d_p^2 * (T_c - T_p)) / (m_p * c_p,p)
+Prior to ignition ($T_p < T_{\text{ign}}$), droplet heating is driven by forced convection:
 
-Once T_p reaches T_ign, droplet combustion initiates. Metal droplet diameter decay follows a pressure-scaled power law (d^1.8 law):
-d(d_p^1.8) / dt = -K_b
-K_b = K_b0 * (P_c / P_ref)^0.27
-K_b0 = 0.75e-6 * w_Al + 1.85e-6 * (1.0 - w_Al) [m^1.8 / s]
+$$Nu_p = 2.0 + 0.6 \cdot Re_p^{0.5} \cdot Pr_g^{1/3}$$
+$$h_p = \frac{Nu_p \cdot k_g}{d_p}$$
+$$\frac{dT_p}{dt} = \frac{h_p \cdot \pi d_p^2 \cdot (T_c - T_p)}{m_p \cdot c_{p,p}}$$
+
+Once $T_p$ reaches $T_{\text{ign}}$, droplet combustion initiates. Metal droplet diameter decay follows a pressure-scaled power law ($d^{1.8}$ law):
+
+$$\frac{d(d_p^{1.8})}{dt} = -K_b$$
+$$K_b = K_{b0} \cdot \left(\frac{P_c}{P_{\text{ref}}}\right)^{0.27}$$
+$$K_{b0} = 0.75 \times 10^{-6} \cdot w_{\text{Al}} + 1.85 \times 10^{-6} \cdot (1.0 - w_{\text{Al}}) \quad [\text{m}^{1.8}/\text{s}]$$
 
 Instantaneous droplet mass is updated from diameter:
-m_p = (4 / 3) * pi * (d_p / 2)^3 * rho_p
+
+$$m_p = \frac{4}{3} \cdot \pi \cdot \left(\frac{d_p}{2}\right)^3 \cdot \rho_p$$
 
 ### 2.5 Expulsion Efficiency and Slag Deposition Formulations
 Metal expulsion efficiency represents the fraction of metallic fuel that leaves the primary combustor without burning:
-eta_expulsion(x) = (m_p(x) / m_p0) * 100 [%]
 
-Burned metal produces condensed oxide species (Al2O3 and MgO). The mass of oxide generated during time step dt is:
-m_oxide = (m_p(t) - m_p(t + dt)) * 1.85
+$$\eta_{\text{expulsion}}(x) = \text{clamp}\left( \frac{m_p(x)}{m_{p0}} \times 100\%, \, 0.0\%, \, 100.0\% \right)$$
+
+Burned metal produces condensed oxide species ($\text{Al}_2\text{O}_3$ and $\text{MgO}$). The mass of oxide generated during time step $dt$ is:
+
+$$m_{\text{oxide}} = (m_p(t) - m_p(t + dt)) \times 1.85$$
 
 A fraction of this oxide deposits onto combustor surfaces based on droplet inertia and residence time:
-f_dep = clamp(0.10 * (1.0 + 0.04 * (d_p0_um / 20.0)), 0.0, 0.50)
-Slag_accumulated = sum(m_oxide * f_dep)
+
+$$f_{\text{dep}} = \text{clamp}\left( 0.10 \cdot \left(1.0 + 0.04 \cdot \frac{d_{p0,\mu\text{m}}}{20.0}\right), \, 0.0, \, 0.50 \right)$$
+$$\text{Slag}_{\text{accumulated}} = \sum \left( m_{\text{oxide}} \cdot f_{\text{dep}} \right)$$
 
 ### 2.6 BATES Grain Geometry and Internal Ballistics
-A Ballistic Test and Evaluation System (BATES) grain consists of N_seg cylindrical segments with outer diameter D_o, initial inner port diameter d_i0, and segment length L_g0.
+A Ballistic Test and Evaluation System (BATES) grain consists of $N_{\text{seg}}$ cylindrical segments with outer diameter $D_o$, initial inner port diameter $d_{i0}$, and segment length $L_{g0}$.
 
-As combustion proceeds, the web distance burned is y(t) = integral(r_b dt).
-- Instantaneous inner diameter: d_i(t) = d_i0 + 2 * y(t)
-- Instantaneous segment length: L_g(t) = L_g0 - 2 * y(t) (for uninhibited ends)
-- Burning surface area:
-  A_b(t) = N_seg * [ pi * d_i(t) * L_g(t) + 0.5 * pi * (D_o^2 - d_i(t)^2) ]
-- Klemmung ratio: K_b(t) = A_b(t) / A_t, where A_t = (pi / 4) * d_t^2
+As combustion proceeds, the web distance burned is $y(t) = \int r_b \, dt$.
+* Instantaneous inner diameter: $d_i(t) = d_{i0} + 2y(t)$
+* Instantaneous segment length: $L_g(t) = L_{g0} - 2y(t)$ (for uninhibited ends)
+* Burning surface area:
 
-Internal chamber pressure equilibrium follows Saint-Robert's burn rate law r_b = a * P_c^n:
-P_c(t) [MPa] = [ (a * rho_prop * c* * K_b(t)) / 1.0e6 ]^(1 / (1 - n))
-r_b(t) [m/s] = a * (P_c(t))^n
+$$A_b(t) = N_{\text{seg}} \cdot \left[ \pi \cdot d_i(t) \cdot L_g(t) + \frac{\pi}{2} \cdot \left(D_o^2 - d_i(t)^2\right) \right]$$
+
+* Klemmung ratio: $K_b(t) = \frac{A_b(t)}{A_t}$, where $A_t = \frac{\pi}{4} \cdot d_t^2$
+
+Internal chamber pressure equilibrium follows Saint-Robert's burn rate law $r_b = a \cdot P_c^n$:
+
+$$P_c(t) \, [\text{MPa}] = \left[ \frac{a \cdot \rho_{\text{prop}} \cdot c^* \cdot K_b(t)}{10^6} \right]^{\frac{1}{1 - n}}$$
+$$r_b(t) \, [\text{m/s}] = a \cdot (P_c(t))^n$$
 
 ### 2.7 CONVERGE CFD Boundary Formulations
 For 3D solid rocket motor combustion and regression CFD:
-- Surface Mass Flux: m''_wall(t) = rho_prop * r_b(t) [kg / (m^2 * s)]
-- Gas Inflow Velocity: v_inflow(t) = (rho_prop / rho_g(t)) * r_b(t) [m / s]
-- Regressing Boundary Displacement: dy / dt = r_b(t)
+* Surface Mass Flux: $m''_{\text{wall}}(t) = \rho_{\text{prop}} \cdot r_b(t) \quad [\text{kg}/(\text{m}^2 \cdot \text{s})]$
+* Gas Inflow Velocity: $v_{\text{inflow}}(t) = \frac{\rho_{\text{prop}}}{\rho_g(t)} \cdot r_b(t) \quad [\text{m/s}]$
+* Regressing Boundary Displacement: $\frac{dy}{dt} = r_b(t)$
 
 ---
 
@@ -148,11 +165,14 @@ d:/CEA/
 ├── optimize_expulsion.py          Parametric sweep and design envelope optimization engine
 ├── test_physics_and_math.py       Automated unit and validation test suite
 ├── MATH_AND_TEST_AUDIT.md         Technical mathematical audit and error catalog
+├── setup.py                       Python package configuration script
 ├── cea_wbr_final_lab.spec         PyInstaller executable build configuration
 ├── requirements.txt               Python dependency specifications
 ├── .gitignore                     Git tracking configuration
+├── .gitattributes                 Git LFS tracking configuration
 ├── dist/
-│   └── Unified_WBR_CEA_Lab.exe    Standalone Windows executable (447 MB)
+│   ├── Unified_WBR_CEA_Lab.exe    Standalone Windows executable (447 MB)
+│   └── Unified_WBR_CEA_Lab_v1.0.0_win64.zip Archive build package
 └── legacy/                        Archived early prototypes and preliminary scripts
 ```
 
@@ -161,14 +181,20 @@ d:/CEA/
 ## 4. Installation and Dependencies
 
 ### Prerequisites
-- Python 3.10, 3.11, or 3.12 (64-bit)
-- Microsoft C++ Build Tools (required by RocketCEA for Fortran/C wrappers)
+* Python 3.10, 3.11, or 3.12 (64-bit)
+* Microsoft C++ Build Tools (required by RocketCEA for Fortran/C wrappers)
 
-### Installation
-Clone the repository and install the required dependencies:
+### Installation Options
+
+#### Standard pip install (from directory)
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/sohamsans/Al-Mg-WBR-combustion-simulation-and-CONVERGE-CFD-suite.git
+cd Al-Mg-WBR-combustion-simulation-and-CONVERGE-CFD-suite
+pip install -e .
+```
+
+#### Installing from requirements file
+```bash
 pip install -r requirements.txt
 ```
 
@@ -178,6 +204,10 @@ pip install -r requirements.txt
 
 ### 5.1 Graphical User Interface
 Launch the master simulation dashboard:
+```bash
+wbr-lab-gui
+```
+or via Python:
 ```bash
 python cea_wbr_final_lab.py
 ```
@@ -191,6 +221,10 @@ The interface contains five operational tabs:
 ### 5.2 Automated Test Suite
 Run the verification suite to check physics limits, boundary conditions, and mathematical sanity:
 ```bash
+wbr-physics-test
+```
+or via Python:
+```bash
 python test_physics_and_math.py
 ```
 Expected output:
@@ -202,7 +236,7 @@ test_converge_cfd_export ... ok
 test_primary_gas_state_robustness ... ok
 
 ----------------------------------------------------------------------
-Ran 5 tests in 4.170s
+Ran 5 tests in 4.358s
 
 OK
 ```
@@ -221,13 +255,17 @@ python optimize_expulsion.py
 ### 5.4 CONVERGE CFD Export
 Generate input boundary condition files for CONVERGE CFD:
 ```bash
+wbr-cfd-export
+```
+or via Python:
+```bash
 python bates_converge_cfd_exporter.py
 ```
 Generated artifacts:
-- `converge_bates_boundary.in`: Inflow and surface regression boundary setup.
-- `converge_inflow_mass_flux.dat`: Transient wall mass flux and inflow injection velocity table.
-- `converge_thermo.dat`: Gas molecular weight, gamma, and species mass fractions.
-- `bates_internal_ballistics.csv`: Time-resolved grain geometry and chamber pressure dataset.
+* `converge_bates_boundary.in`: Inflow and surface regression boundary setup.
+* `converge_inflow_mass_flux.dat`: Transient wall mass flux and inflow injection velocity table.
+* `converge_thermo.dat`: Gas molecular weight, gamma, and species mass fractions.
+* `bates_internal_ballistics.csv`: Time-resolved grain geometry and chamber pressure dataset.
 
 ---
 
@@ -237,4 +275,4 @@ To rebuild the single-file executable using PyInstaller:
 ```bash
 python -m PyInstaller cea_wbr_final_lab.spec --noconfirm
 ```
-The compiled application will be generated in `dist/Unified_WBR_CEA_Lab.exe`.
+The compiled application will be generated in `dist/Unified_WBR_CEA_Lab.exe` and can be compressed into `dist/Unified_WBR_CEA_Lab_v1.0.0_win64.zip`.
