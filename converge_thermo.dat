@@ -1,0 +1,5 @@
+THERMO_DATA_CONVERGE_CFD
+Gas_Molecular_Weight: 32.1421 g/mol
+Ratio_of_Specific_Heats_Gamma: 1.2200
+Chamber_Temperature: 2800.00 K
+End_Thermo_Data

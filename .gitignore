@@ -1,0 +1,28 @@
+# Python & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Build Artifacts & Caches
+build/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Environment
+.pytest_cache/
+test_converge_cfd_out/
+.env
+.venv
+env/
+venv/
+
+# PyInstaller temporary logs
+*.log
+*.manifest
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
