@@ -28,7 +28,10 @@ def simulate_bates_grain_regression(
     n_exp=0.38,            # Pressure exponent
     ends_inhibited=False,  # Uninhibited vs inhibited segment ends
     cstar_m_s=1550.0,      # Characteristic velocity c* (m/s)
-    dt_s=0.005             # Time step (5 ms)
+    dt_s=0.005,            # Time step (5 ms)
+    al_pct=75.0,           # Aluminum mass %
+    htpb_pct=15.0,         # HTPB binder %
+    primary_of=0.25        # Primary O/F ratio
 ):
     """
     Simulate BATES solid propellant grain regression and internal ballistics.
@@ -51,6 +54,7 @@ def simulate_bates_grain_regression(
     y = 0.0
     t = 0.0
     records = []
+    latest_species_dict = None
     
     while y <= web_thickness and t < 10.0:
         d_i = d_i0_m + 2.0 * y
@@ -85,7 +89,8 @@ def simulate_bates_grain_regression(
         mass_flux_wall = rho_prop * r_b_m_s   # kg/(m^2 s)
         
         # Primary Gas Thermochemistry at P_c
-        gas = calculate_primary_gas_state(al_pct=75.0, htpb_pct=15.0, pc_psia=P_c_psia, primary_of=0.25)
+        gas = calculate_primary_gas_state(al_pct=al_pct, htpb_pct=htpb_pct, pc_psia=P_c_psia, primary_of=primary_of)
+        latest_species_dict = gas.get('species_dict', None)
         
         # Injection velocity from regressing wall
         v_inflow = (rho_prop / gas['rho_g']) * r_b_m_s  # m/s
@@ -115,9 +120,11 @@ def simulate_bates_grain_regression(
         t += dt_s
         
     df = pd.DataFrame(records)
+    df.attrs['species_dict'] = latest_species_dict
+    df.attrs['rho_prop'] = rho_prop
     return df
 
-def export_converge_cfd_inputs(df, output_dir="d:/CEA", rho_prop=1750.0):
+def export_converge_cfd_inputs(df, output_dir="d:/CEA", rho_prop=None, species_dict=None):
     """
     Export CONVERGE CFD boundary files, mass flux tables, and thermo.dat formats.
     Guarded against empty DataFrames or NaN values.
@@ -126,6 +133,24 @@ def export_converge_cfd_inputs(df, output_dir="d:/CEA", rho_prop=1750.0):
         raise ValueError("Cannot export empty regression dataset. Please run the BATES simulation first.")
         
     os.makedirs(output_dir, exist_ok=True)
+    
+    if rho_prop is None:
+        rho_prop = df.attrs.get('rho_prop', 1750.0)
+        
+    if species_dict is None or len(species_dict) == 0:
+        species_dict = df.attrs.get('species_dict', None)
+        
+    if species_dict is None or len(species_dict) == 0:
+        # Default representative primary gas species
+        species_dict = {
+            'CO': 0.245,
+            'CO2': 0.112,
+            'H2O': 0.184,
+            'H2': 0.082,
+            'N2': 0.142,
+            'Al2O3': 0.185,
+            'MgO': 0.050
+        }
     
     # 1. Export Internal Ballistics CSV
     csv_path = os.path.join(output_dir, "bates_internal_ballistics.csv")
@@ -150,13 +175,8 @@ def export_converge_cfd_inputs(df, output_dir="d:/CEA", rho_prop=1750.0):
         f.write("WALL_MOTION: REGRESSING_SURFACE\n")
         f.write(f"PROPELLANT_DENSITY: {rho_prop:.1f} kg/m^3\n")
         f.write("SPECIES_MASS_FRACTIONS:\n")
-        f.write("  CO    : 0.245\n")
-        f.write("  CO2   : 0.112\n")
-        f.write("  H2O   : 0.184\n")
-        f.write("  H2    : 0.082\n")
-        f.write("  N2    : 0.142\n")
-        f.write("  Al2O3 : 0.185\n")
-        f.write("  MgO   : 0.050\n")
+        for sp_name, frac in species_dict.items():
+            f.write(f"  {sp_name:<6} : {frac:.4f}\n")
         
     # 4. Export CONVERGE Thermodynamic Data File (thermo.dat)
     thermo_dat = os.path.join(output_dir, "converge_thermo.dat")

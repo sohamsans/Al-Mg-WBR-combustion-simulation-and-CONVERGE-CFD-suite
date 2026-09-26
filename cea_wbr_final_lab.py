@@ -18,7 +18,11 @@ import traceback
 from rocketcea.cea_obj import CEA_Obj, add_new_fuel, add_new_oxidizer
 
 # Import high-fidelity 1D primary combustion physics model
-from primary_combustion_model import simulate_1d_primary_combustor, get_alloy_properties
+from primary_combustion_model import (
+    simulate_1d_primary_combustor,
+    get_alloy_properties,
+    generate_atom_balanced_fuel_string
+)
 from bates_converge_cfd_exporter import simulate_bates_grain_regression, export_converge_cfd_inputs
 
 class UnifiedWBRResearchLab(tk.Tk):
@@ -179,24 +183,15 @@ class UnifiedWBRResearchLab(tk.Tk):
             htpb_pct = self._get_float(self.htpb_entry, "HTPB Binder %", 1.0, 95.0, 15.0)
             pc = self._get_float(self.pc_entry, "Chamber Pressure", 10.0, 5000.0, 200.0)
             eps = self._get_float(self.eps_entry, "Area Ratio", 1.0, 100.0, 8.0)
-            sub_frozen = False
-            mg_pct = 100.0 - al_pct
-            metal_wt = 100.0 - htpb_pct
-            al_wt = (al_pct / 100.0) * metal_wt
-            mg_wt = (mg_pct / 100.0) * metal_wt
+            sub_frozen = bool(self.frozen_var.get())
 
-            moles_htpb = htpb_pct / 98.32
-            moles_C = 7.07 * moles_htpb
-            moles_H = 10.12 * moles_htpb
-            moles_O = 0.20 * moles_htpb
-            moles_Al = al_wt / 26.9815
-            moles_Mg = mg_wt / 24.305
-            bulk_h_cal = (htpb_pct * -12.5) / 100.0
+            fuel_card_name = 'WaterRamjet_Fuel'
+            fuel_string = generate_atom_balanced_fuel_string(al_pct=al_pct, htpb_pct=htpb_pct, fuel_card_name=fuel_card_name)
 
             add_new_oxidizer('MyH2O', "ox H2O(L) H 2 O 1 wt%=100.0 h,cal=-3788.5 t(k)=298.15")
-            add_new_fuel('AlMg_Fuel', f"fuel AlMg_Fuel C {moles_C:.5f} H {moles_H:.5f} O {moles_O:.5f} AL {moles_Al:.5f} MG {moles_Mg:.5f} wt%=100.0 h,cal={bulk_h_cal:.2f} t(k)=298.15")
+            add_new_fuel(fuel_card_name, fuel_string)
 
-            cea = CEA_Obj(oxName='MyH2O', fuelName='AlMg_Fuel')
+            cea = CEA_Obj(oxName='MyH2O', fuelName=fuel_card_name)
             mr_range = np.linspace(1.5, 10.0, 40)
             data = []
 
@@ -369,7 +364,15 @@ class UnifiedWBRResearchLab(tk.Tk):
 
     def run_bates_simulation(self):
         try:
-            df_bates = simulate_bates_grain_regression()
+            al_pct = self._get_float(self.al_entry, "Al Mass %", 0.0, 100.0, 75.0)
+            htpb_pct = self._get_float(self.htpb_entry, "HTPB Binder %", 1.0, 95.0, 15.0)
+            primary_of = self._get_float(self.of_entry, "Primary O/F Ratio", 0.01, 2.0, 0.25)
+            
+            df_bates = simulate_bates_grain_regression(
+                al_pct=al_pct,
+                htpb_pct=htpb_pct,
+                primary_of=primary_of
+            )
             self.bates_df = df_bates
             self.global_df = df_bates
 
@@ -410,8 +413,10 @@ class UnifiedWBRResearchLab(tk.Tk):
             messagebox.showwarning("No Data", "Run BATES Grain Regression simulation first!")
             return
         try:
-            export_converge_cfd_inputs(self.bates_df)
-            messagebox.showinfo("Export Success", "CONVERGE CFD boundary files successfully created in project directory!\n\nFiles Generated:\n- converge_bates_boundary.in\n- converge_inflow_mass_flux.dat\n- converge_thermo.dat\n- bates_internal_ballistics.csv")
+            rho_prop = self.bates_df.attrs.get('rho_prop', 1750.0)
+            species_dict = self.bates_df.attrs.get('species_dict', None)
+            export_converge_cfd_inputs(self.bates_df, rho_prop=rho_prop, species_dict=species_dict)
+            messagebox.showinfo("Export Success", "CONVERGE CFD boundary files successfully created in project directory!\n\nFiles Generated:\n- converge_bates_boundary.in (Dynamic species & density)\n- converge_inflow_mass_flux.dat\n- converge_thermo.dat\n- bates_internal_ballistics.csv")
         except Exception as e:
             messagebox.showerror("Export Error", str(e))
 

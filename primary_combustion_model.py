@@ -53,6 +53,37 @@ def get_alloy_properties(al_mass_frac):
     t_ign = T_IGN_MG + (T_IGN_AL - T_IGN_MG) * (al_mass_frac**1.5)
     return rho_p, cp_p, t_ign
 
+def generate_atom_balanced_fuel_string(al_pct=75.0, htpb_pct=15.0, fuel_card_name="Primary_AlMg_Fuel"):
+    """
+    Generate an elemental atom-balanced RocketCEA fuel definition string
+    representing HTPB binder + Al/Mg alloy composite fuel with bulk enthalpy.
+    Elemental composition per 100g fuel mixture:
+      HTPB: C7.07 H10.12 O0.20 (MW ~ 98.32 g/mol), h_form = -12.5 cal/g
+      Al: 26.9815 g/mol
+      Mg: 24.305 g/mol
+    """
+    al_pct = float(np.clip(al_pct, 0.0, 100.0))
+    htpb_pct = float(np.clip(htpb_pct, 1.0, 95.0))
+    
+    mg_pct = 100.0 - al_pct
+    metal_wt = 100.0 - htpb_pct
+    al_wt = (al_pct / 100.0) * metal_wt
+    mg_wt = (mg_pct / 100.0) * metal_wt
+    
+    moles_htpb = htpb_pct / 98.32
+    moles_C = 7.07 * moles_htpb
+    moles_H = 10.12 * moles_htpb
+    moles_O = 0.20 * moles_htpb
+    moles_Al = al_wt / 26.9815
+    moles_Mg = mg_wt / 24.305
+    
+    bulk_h_cal = (htpb_pct * -12.5) / 100.0
+    
+    fuel_string = (f"fuel {fuel_card_name} C {moles_C:.5f} H {moles_H:.5f} O {moles_O:.5f} "
+                   f"AL {moles_Al:.5f} MG {moles_Mg:.5f} "
+                   f"wt%=100.0 h,cal={bulk_h_cal:.2f} t(k)=298.15")
+    return fuel_string
+
 def calculate_primary_gas_state(al_pct=75.0, htpb_pct=15.0, pc_psia=200.0, primary_of=0.25):
     """
     Compute fuel-rich primary combustion equilibrium gas properties using exact molar atom balancing.
@@ -64,29 +95,12 @@ def calculate_primary_gas_state(al_pct=75.0, htpb_pct=15.0, pc_psia=200.0, prima
     pc_psia = float(max(5.0, pc_psia))
     primary_of = float(max(0.01, primary_of))
     
-    mg_pct = 100.0 - al_pct
-    metal_wt = 100.0 - htpb_pct
-    al_wt = (al_pct / 100.0) * metal_wt
-    mg_wt = (mg_pct / 100.0) * metal_wt
-    
-    # Moles of elements per 100g fuel mixture
-    # HTPB: C7.07 H10.12 O0.20 (MW ~ 98.32 g/mol)
-    moles_htpb = htpb_pct / 98.32
-    moles_C = 7.07 * moles_htpb
-    moles_H = 10.12 * moles_htpb
-    moles_O = 0.20 * moles_htpb
-    moles_Al = al_wt / 26.9815
-    moles_Mg = mg_wt / 24.305
-    
-    bulk_h_cal = (htpb_pct * -12.5) / 100.0
-    
-    fuel_string = (f"fuel Primary_AlMg_Fuel C {moles_C:.5f} H {moles_H:.5f} O {moles_O:.5f} "
-                   f"AL {moles_Al:.5f} MG {moles_Mg:.5f} "
-                   f"wt%=100.0 h,cal={bulk_h_cal:.2f} t(k)=298.15")
+    fuel_card_name = 'Primary_AlMg_Fuel'
+    fuel_string = generate_atom_balanced_fuel_string(al_pct=al_pct, htpb_pct=htpb_pct, fuel_card_name=fuel_card_name)
     
     try:
-        add_new_fuel('Primary_AlMg_Fuel', fuel_string)
-        cea = CEA_Obj(oxName='AP_Ox', fuelName='Primary_AlMg_Fuel')
+        add_new_fuel(fuel_card_name, fuel_string)
+        cea = CEA_Obj(oxName='AP_Ox', fuelName=fuel_card_name)
     except Exception:
         cea = CEA_Obj(oxName='AP', fuelName='AL')
         
@@ -118,6 +132,22 @@ def calculate_primary_gas_state(al_pct=75.0, htpb_pct=15.0, pc_psia=200.0, prima
     # Guaranteed non-zero denominator: gamma >= 1.05
     cp_g = max(100.0, (gamma * R_UNIV / (gamma - 1.0)) / mw_kg) # J/(kg K)
     
+    species_dict = {}
+    try:
+        spec_tuple = cea.get_SpeciesMassFractions(Pc=pc_psia, MR=primary_of, eps=eps_chamber)
+        if spec_tuple and len(spec_tuple) > 1 and isinstance(spec_tuple[1], dict):
+            for sp_name, vals in spec_tuple[1].items():
+                if vals and len(vals) > 0:
+                    frac = float(vals[0])
+                    if frac >= 1e-4:
+                        clean_name = sp_name.replace('*', '').split(',')[0].strip()
+                        species_dict[clean_name] = frac
+    except Exception:
+        species_dict = {'CO': 0.245, 'CO2': 0.112, 'H2O': 0.184, 'H2': 0.082, 'N2': 0.142, 'Al2O3': 0.185, 'MgO': 0.050}
+        
+    if not species_dict:
+        species_dict = {'CO': 0.245, 'CO2': 0.112, 'H2O': 0.184, 'H2': 0.082, 'N2': 0.142, 'Al2O3': 0.185, 'MgO': 0.050}
+        
     return {
         'Tc': tc,
         'MW': mw,
@@ -126,7 +156,8 @@ def calculate_primary_gas_state(al_pct=75.0, htpb_pct=15.0, pc_psia=200.0, prima
         'Pc_Pa': pc_pa,
         'mu_g': mu_g,
         'kg_g': kg_g,
-        'cp_g': cp_g
+        'cp_g': cp_g,
+        'species_dict': species_dict
     }
 
 def simulate_1d_primary_combustor(
@@ -159,9 +190,12 @@ def simulate_1d_primary_combustor(
     gas = calculate_primary_gas_state(al_pct=al_pct, htpb_pct=htpb_pct, pc_psia=pc_psia, primary_of=primary_of)
     
     area_combustor = max(1.0e-6, np.pi * (chamber_diameter_m / 2.0)**2)
-    # Inlet & Exit gas velocity accounting for thermal expansion along chamber x
-    u_g_inlet = mass_flow_rate_kg_s / max(1.0e-6, gas['rho_g'] * area_combustor)
-    u_g_exit = u_g_inlet * 1.8  # Thermal expansion acceleration factor
+    # Mass conservation along 1D axis:
+    # mdot(x) = mdot_head_end + (x / L_c) * mdot_side_wall_grain
+    # Head-end ignition mass flux provides ~20% of total mass flow; side grain regression supplies 80%
+    mdot_inlet = mass_flow_rate_kg_s * 0.20
+    mdot_side_total = mass_flow_rate_kg_s * 0.80
+    u_g_inlet = mdot_inlet / max(1.0e-6, gas['rho_g'] * area_combustor)
     
     al_frac = al_pct / 100.0
     rho_p, cp_p, t_ign = get_alloy_properties(al_frac)
@@ -188,8 +222,9 @@ def simulate_1d_primary_combustor(
     accumulated_slag = 0.0
     
     while x <= chamber_length_m and d_p > 1.0e-7 and t < 0.2:
-        # Gas velocity profile along combustor x
-        u_g_local = u_g_inlet + (u_g_exit - u_g_inlet) * (x / max(chamber_length_m, 1e-4))
+        # Strict 1D Mass Conservation: u_g(x) = mdot(x) / (rho_g * A_c)
+        mdot_local = mdot_inlet + mdot_side_total * min(1.0, x / max(chamber_length_m, 1e-4))
+        u_g_local = mdot_local / max(1.0e-6, gas['rho_g'] * area_combustor)
         
         # 1. Relative Reynolds Number & Drag Acceleration (Carlson-Hoglund)
         delta_u = u_g_local - u_p
