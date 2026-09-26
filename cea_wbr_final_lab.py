@@ -196,7 +196,7 @@ class UnifiedWBRResearchLab(tk.Tk):
             data = []
 
             for mr in mr_range:
-                isp_vac = cea.get_Ivac(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
+                isp_vac = cea.get_Isp(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
                 temps = cea.get_Temperatures(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
                 mw_gam = cea.get_Chamber_MolWt_gamma(Pc=pc, MR=mr, eps=eps)
 
