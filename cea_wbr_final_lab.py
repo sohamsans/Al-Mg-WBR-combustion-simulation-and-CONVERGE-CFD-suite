@@ -176,20 +176,32 @@ class UnifiedWBRResearchLab(tk.Tk):
     def run_cea_water_sweep(self):
         try:
             al_pct = self._get_float(self.al_entry, "Al Mass %", 0.0, 100.0, 75.0)
-            mg_pct = 100.0 - al_pct
+            htpb_pct = self._get_float(self.htpb_entry, "HTPB Binder %", 1.0, 95.0, 15.0)
             pc = self._get_float(self.pc_entry, "Chamber Pressure", 10.0, 5000.0, 200.0)
             eps = self._get_float(self.eps_entry, "Area Ratio", 1.0, 100.0, 8.0)
-            sub_frozen = bool(self.frozen_var.get())
+            sub_frozen = False
+            mg_pct = 100.0 - al_pct
+            metal_wt = 100.0 - htpb_pct
+            al_wt = (al_pct / 100.0) * metal_wt
+            mg_wt = (mg_pct / 100.0) * metal_wt
+
+            moles_htpb = htpb_pct / 98.32
+            moles_C = 7.07 * moles_htpb
+            moles_H = 10.12 * moles_htpb
+            moles_O = 0.20 * moles_htpb
+            moles_Al = al_wt / 26.9815
+            moles_Mg = mg_wt / 24.305
+            bulk_h_cal = (htpb_pct * -12.5) / 100.0
 
             add_new_oxidizer('MyH2O', "ox H2O(L) H 2 O 1 wt%=100.0 h,cal=-3788.5 t(k)=298.15")
-            add_new_fuel('AlMg_Fuel', f"fuel AlMg_Fuel Al {al_pct/100:.4f} Mg {mg_pct/100:.4f} wt%=100.0 h,cal=0.0 t(k)=298.15")
+            add_new_fuel('AlMg_Fuel', f"fuel AlMg_Fuel C {moles_C:.5f} H {moles_H:.5f} O {moles_O:.5f} AL {moles_Al:.5f} MG {moles_Mg:.5f} wt%=100.0 h,cal={bulk_h_cal:.2f} t(k)=298.15")
 
             cea = CEA_Obj(oxName='MyH2O', fuelName='AlMg_Fuel')
             mr_range = np.linspace(1.5, 10.0, 40)
             data = []
 
             for mr in mr_range:
-                isp_vac = cea.get_Isp(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
+                isp_vac = cea.get_Ivac(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
                 temps = cea.get_Temperatures(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
                 mw_gam = cea.get_Chamber_MolWt_gamma(Pc=pc, MR=mr, eps=eps)
 

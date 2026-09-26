@@ -117,7 +117,7 @@ def simulate_bates_grain_regression(
     df = pd.DataFrame(records)
     return df
 
-def export_converge_cfd_inputs(df, output_dir="d:/CEA"):
+def export_converge_cfd_inputs(df, output_dir="d:/CEA", rho_prop=1750.0):
     """
     Export CONVERGE CFD boundary files, mass flux tables, and thermo.dat formats.
     Guarded against empty DataFrames or NaN values.
@@ -148,7 +148,7 @@ def export_converge_cfd_inputs(df, output_dir="d:/CEA"):
         f.write(f"TEMPERATURE: {df['T_c_K'].iloc[0]:.2f} K\n")
         f.write("MASS_FLUX_FILE: converge_inflow_mass_flux.dat\n")
         f.write("WALL_MOTION: REGRESSING_SURFACE\n")
-        f.write(f"PROPELLANT_DENSITY: {1750.0} kg/m^3\n")
+        f.write(f"PROPELLANT_DENSITY: {rho_prop:.1f} kg/m^3\n")
         f.write("SPECIES_MASS_FRACTIONS:\n")
         f.write("  CO    : 0.245\n")
         f.write("  CO2   : 0.112\n")

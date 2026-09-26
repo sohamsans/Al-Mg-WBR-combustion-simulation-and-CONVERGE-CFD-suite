@@ -231,8 +231,11 @@ def simulate_1d_primary_combustor(
             m_p_next = min(m_p, (4.0 / 3.0) * np.pi * ((d_p_next / 2.0)**3) * rho_p)
             dm_dt = max(0.0, (m_p - m_p_next) / dt)
             
-            # Slag generation & wall deposition (Al2O3 / MgO oxide ratio)
-            oxide_mass = dm_dt * dt * 1.85
+            # Dynamic stoichiometric oxide generation multiplier:
+            # Al -> Al2O3 ratio = 101.96 / (2 * 26.9815) = 1.8894
+            # Mg -> MgO ratio = 40.3044 / 24.305 = 1.6583
+            oxide_ratio = al_frac * 1.8894 + (1.0 - al_frac) * 1.6583
+            oxide_mass = dm_dt * dt * oxide_ratio
             # Deposition fraction dependent on particle size & residence time
             dep_factor = float(np.clip(0.10 * (1.0 + 0.04 * (d_p0_um / 20.0)), 0.0, 0.50))
             accumulated_slag += oxide_mass * dep_factor
@@ -240,7 +243,10 @@ def simulate_1d_primary_combustor(
             d_p = d_p_next
             m_p = m_p_next
             
-        # Expulsion efficiency strictly clamped between 0% and 100%
+        # Expulsion efficiency eta_expulsion = (m_p / m_p0) * 100%.
+        # NOTE FOR WATER-BREATHING RAMJETS (WBR): High expulsion efficiency (>= 90%)
+        # means metallic droplets exit the primary combustor unburned into the secondary combustor,
+        # where they react with ingested liquid water. This is the intended physical design objective.
         expulsion_eff = float(np.clip((m_p / m_p0) * 100.0, 0.0, 100.0))
         
         records.append({
