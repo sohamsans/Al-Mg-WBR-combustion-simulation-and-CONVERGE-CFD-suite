@@ -119,7 +119,7 @@ $$m_p = \frac{4}{3} \cdot \pi \cdot \left(\frac{d_p}{2}\right)^3 \cdot \rho_p$$
 ### 2.5 Expulsion Efficiency and Slag Deposition Formulations
 Metal expulsion efficiency represents the fraction of metallic fuel that leaves the primary combustor without burning:
 
-$$\eta_{\text{expulsion}}(x) = \text{clamp}\left( \frac{m_p(x)}{m_{p0}} \times 100\%, \, 0.0\%, \, 100.0\% \right)$$
+$$\eta_{\text{expulsion}}(x) = \text{clamp}\left( \frac{m_p(x)}{m_{p0}} \times 100\%, 0.0\%, 100.0\% \right)$$
 
 Burned metal produces condensed oxide species ($\text{Al}_2\text{O}_3$ and $\text{MgO}$). The mass of oxide generated during time step $dt$ is:
 
@@ -218,7 +218,7 @@ The interface contains five operational tabs:
 4. CFD Exporter and Data Viewer: Previews numerical tables and formats CFD-ready data.
 5. BATES Grain and CONVERGE CFD Setup: Simulates transient internal ballistics and exports CONVERGE CFD boundary files.
 
-### 5.2 Automated Test Suite
+### 5.2 Automated Physics & Math Test Suite
 Run the verification suite to check physics limits, boundary conditions, and mathematical sanity:
 ```bash
 wbr-physics-test
@@ -241,7 +241,24 @@ Ran 5 tests in 4.358s
 OK
 ```
 
-### 5.3 Command-Line Simulation and Optimization
+### 5.3 High-Resolution Full Grid Verification Sweep (1% Fine Increments)
+Execute high-resolution automated grid verification across 1% parameter increments (0% to 100% Al mass fraction in 101 steps, 5% to 30% HTPB binder in 26 steps, chamber pressure, particle sizes, and O/F ratios):
+```bash
+python test_full_grid_sanity.py
+```
+Verification assertions validated per evaluation:
+* Non-NaN / Non-Inf guard across all outputs.
+* Primary and secondary flame temperatures: $500\text{ K} \le T_c \le 7500\text{ K}$.
+* Water-ramjet vacuum specific impulse: $100\text{ s} \le I_{sp,vac} \le 600\text{ s}$.
+* Gas molecular weight: $5.0 \le MW_g \le 45.0\text{ g/mol}$.
+* Specific heat ratio: $1.05 \le \gamma \le 1.45$.
+* Strict monotonicity on particle diameter decay ($\frac{dd_p}{dt} \le 0$).
+* Metal expulsion efficiency bounded strictly within $[0.0\%, 100.0\%]$.
+* BATES internal ballistics chamber pressure equilibrium stability ($P_c \ge 0.05\text{ MPa}$, $r_b > 0\text{ mm/s}$).
+
+---
+
+### 5.4 Command-Line Simulation and Optimization
 Execute standalone 1D droplet trajectory physics:
 ```bash
 python primary_combustion_model.py
