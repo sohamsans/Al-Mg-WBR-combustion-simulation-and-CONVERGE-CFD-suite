@@ -119,7 +119,7 @@ $$m_p = \frac{4}{3} \cdot \pi \cdot \left(\frac{d_p}{2}\right)^3 \cdot \rho_p$$
 ### 2.5 Expulsion Efficiency and Slag Deposition Formulations
 Metal expulsion efficiency represents the fraction of metallic fuel that leaves the primary combustor without burning:
 
-$$\eta_{\text{expulsion}}(x) = \operatorname{clamp}\left( \frac{m_p(x)}{m_{p0}} \times 100\%, 0.0\%, 100.0\% \right)$$
+$$\eta_{\text{expulsion}}(x) = \text{clamp}\left( \frac{m_p(x)}{m_{p0}} \times 100\%, 0.0\%, 100.0\% \right)$$
 
 Burned metal produces condensed oxide species ($\text{Al}_2\text{O}_3$ and $\text{MgO}$). The mass of oxide generated during time step $dt$ is:
 
