@@ -212,8 +212,9 @@ class UnifiedWBRResearchLab(tk.Tk):
             df = pd.DataFrame(data)
             self.global_df = df
 
-            self.ax1_1.clear()
-            self.ax1_2.clear()
+            # Cleanly purge all previous axes including secondary twinx axes to eliminate ghosting
+            self.fig1.clf()
+            self.ax1_1, self.ax1_2 = self.fig1.subplots(2, 1)
 
             self.ax1_1.plot(df['MR'], df['Isp_vac_s'], 'b-', label='Isp (s)')
             self.ax1_1.set_ylabel('Vacuum Isp (s)', color='b')
@@ -262,8 +263,9 @@ class UnifiedWBRResearchLab(tk.Tk):
 
             self.global_df = df_traj
 
-            self.ax2_1.clear()
-            self.ax2_2.clear()
+            # Cleanly purge all previous axes including secondary twinx axes to eliminate ghosting
+            self.fig2.clf()
+            self.ax2_1, self.ax2_2 = self.fig2.subplots(2, 1)
 
             self.ax2_1.plot(df_traj['x_m'], df_traj['d_p_um'], 'b-', label='d_p (µm)')
             self.ax2_1.set_ylabel('Droplet Diameter (µm)', color='b')
@@ -329,8 +331,8 @@ class UnifiedWBRResearchLab(tk.Tk):
             df_sweep = pd.DataFrame(results)
             self.sweep_df = df_sweep
 
-            self.ax3_1.clear()
-            self.ax3_2.clear()
+            self.fig3.clf()
+            self.ax3_1, self.ax3_2 = self.fig3.subplots(1, 2)
 
             df_75 = df_sweep[df_sweep['Al_pct'] == 75.0]
             for dp in sorted(df_75['d_p0_um'].unique()):
@@ -376,8 +378,9 @@ class UnifiedWBRResearchLab(tk.Tk):
             self.bates_df = df_bates
             self.global_df = df_bates
 
-            self.ax5_1.clear()
-            self.ax5_2.clear()
+            # Cleanly purge all previous axes including secondary twinx axes to eliminate ghosting
+            self.fig5.clf()
+            self.ax5_1, self.ax5_2 = self.fig5.subplots(2, 1)
 
             self.ax5_1.plot(df_bates['time_s'], df_bates['P_c_MPa'], 'r-', label='P_c (MPa)')
             self.ax5_1.set_ylabel('Chamber Pressure (MPa)', color='r')
