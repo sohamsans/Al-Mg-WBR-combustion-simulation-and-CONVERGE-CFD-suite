@@ -248,7 +248,7 @@ python test_full_grid_sanity.py
 ```
 Verification assertions validated per evaluation:
 * Non-NaN / Non-Inf guard across all outputs.
-* Primary and secondary flame temperatures: $500\text{ K} \le T_c \le 7500\text{ K}$.
+* Primary and secondary flame temperatures: $500\text{ K} \le T_c \le 4500\text{ K}$ (reflecting true Kelvin conversion from RocketCEA Rankine output).
 * Water-ramjet vacuum specific impulse: $100\text{ s} \le I_{sp,vac} \le 600\text{ s}$.
 * Gas molecular weight: $5.0 \le MW_g \le 45.0\text{ g/mol}$.
 * Specific heat ratio: $1.05 \le \gamma \le 1.45$.

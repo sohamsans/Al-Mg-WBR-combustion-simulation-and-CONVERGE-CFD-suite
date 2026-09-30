@@ -106,10 +106,11 @@ def calculate_primary_gas_state(al_pct=75.0, htpb_pct=15.0, pc_psia=200.0, prima
         
     eps_chamber = 1.0
     try:
-        temps = cea.get_Temperatures(Pc=pc_psia, MR=primary_of, eps=eps_chamber)
-        tc = float(temps[0]) if (temps and temps[0] > 0) else 2800.0
+        temps_R = cea.get_Temperatures(Pc=pc_psia, MR=primary_of, eps=eps_chamber)
+        # RocketCEA returns temperatures in degrees Rankine (°R). Convert to Kelvin:
+        tc = float(temps_R[0] / 1.8) if (temps_R and temps_R[0] > 0) else 2400.0
     except Exception:
-        tc = 2800.0
+        tc = 2400.0
         
     try:
         mw, gamma = cea.get_Chamber_MolWt_gamma(Pc=pc_psia, MR=primary_of, eps=eps_chamber)

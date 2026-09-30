@@ -197,14 +197,18 @@ class UnifiedWBRResearchLab(tk.Tk):
 
             for mr in mr_range:
                 isp_vac = cea.get_Isp(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
-                temps = cea.get_Temperatures(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
+                temps_R = cea.get_Temperatures(Pc=pc, MR=mr, eps=eps, frozen=sub_frozen)
+                # RocketCEA returns temperatures in degrees Rankine (°R).
+                # Convert to Kelvin: T [K] = T [°R] / 1.8
+                t_chamber_k = (temps_R[0] / 1.8) if (temps_R and temps_R[0] > 0) else np.nan
+                t_exit_k = (temps_R[2] / 1.8) if (temps_R and len(temps_R) > 2 and temps_R[2] > 0) else np.nan
                 mw_gam = cea.get_Chamber_MolWt_gamma(Pc=pc, MR=mr, eps=eps)
 
                 data.append({
                     'MR': mr,
                     'Isp_vac_s': isp_vac,
-                    'T_Chamber_K': temps[0] if len(temps)>0 else np.nan,
-                    'T_Exit_K': temps[2] if len(temps)>2 else np.nan,
+                    'T_Chamber_K': t_chamber_k,
+                    'T_Exit_K': t_exit_k,
                     'MolecularWeight': mw_gam[0],
                     'Gamma': mw_gam[1]
                 })

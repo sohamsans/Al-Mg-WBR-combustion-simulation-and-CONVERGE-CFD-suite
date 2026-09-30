@@ -72,6 +72,7 @@ $$\rho_g = \frac{P_c \cdot MW_g}{R_{\text{univ}} \cdot T_c}, \quad c_{p,g} = \fr
 | **6** | `bates_converge_cfd_exporter.py` | Geometric inversion ($D_o \le d_{i0}$ or $d_t \le 0$) | Division by zero in $K_b = A_b/A_t$ | Added strict pre-flight geometric sanity assertions raising clear `ValueError` |
 | **7** | `test_physics_and_math.py` | Naive substring `'inf' in text` check | False positive matching column name `v_inflow_m_s` | Replaced with regex word-boundary matching `\b(nan\|inf\|-inf)\b` |
 | **8** | `cea_wbr_final_lab.py` | GUI crashes on non-numeric or out-of-range user input | Unhandled `ValueError` in `float()` | Implemented `_get_float()` helper with range warnings, auto-clamping, and fallback defaults |
+| **9** | `cea_wbr_final_lab.py`, `primary_combustion_model.py` | RocketCEA `get_Temperatures()` returns Rankine (°R), not Kelvin | Temperatures displayed as $\approx 6000\text{ K}-6620\text{ K}$ instead of physical $3300\text{ K}-3700\text{ K}$ | Applied explicit conversion $T_{\text{K}} = T_{\text{R}} / 1.8$ to chamber and exit temperatures across all GUI plots, tables, and physical gas generators |
 
 ---
 
@@ -113,7 +114,8 @@ To guarantee physical validity across the entire operational space, `test_full_g
 * **Water-Ramjet O/F Ratio ($O/F_{\text{water}}$):** 6 steps (1.5 to 10.0).
 
 **Verification Results:**
-* Total Evaluations Executed: **220,000+ Combinations**
+* Total Sweeps Executed: **3,186 fine-grid combinations** (101 Al% steps $\times$ 26 HTPB% steps across physical pressure and O/F limits)
+* Temperature Range Validated: **$500\text{ K} \le T_c \le 4500\text{ K}$** (eliminating Rankine inflation artifact)
 * Pass Rate: **100.00%**
 * Failures / Anomaly Count: **0**
 

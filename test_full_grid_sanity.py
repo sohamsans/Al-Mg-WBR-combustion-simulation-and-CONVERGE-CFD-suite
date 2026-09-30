@@ -67,16 +67,17 @@ def run_grid_sanity_test():
                     total_tests += 1
                     try:
                         isp = cea.get_Isp(Pc=pc, MR=w_of, eps=8.0)
-                        temps = cea.get_Temperatures(Pc=pc, MR=w_of, eps=8.0)
+                        temps_R = cea.get_Temperatures(Pc=pc, MR=w_of, eps=8.0)
                         mw_gam = cea.get_Chamber_MolWt_gamma(Pc=pc, MR=w_of, eps=8.0)
                         
-                        tc = temps[0] if temps else np.nan
+                        # Convert deg Rankine to Kelvin
+                        tc = (temps_R[0] / 1.8) if temps_R else np.nan
                         mw = mw_gam[0]
                         gam = mw_gam[1]
 
                         assert not np.isnan(isp) and not np.isinf(isp), f"NaN/Inf Isp ({isp})"
                         assert 100.0 <= isp <= 600.0, f"Isp out of bounds ({isp} s)"
-                        assert 500.0 <= tc <= 7500.0, f"Tc out of bounds ({tc} K)"
+                        assert 500.0 <= tc <= 4500.0, f"Tc out of bounds ({tc} K)"
                         assert 5.0 <= mw <= 45.0, f"MW out of bounds ({mw} g/mol)"
                         assert 1.05 <= gam <= 1.45, f"Gamma out of bounds ({gam})"
                         

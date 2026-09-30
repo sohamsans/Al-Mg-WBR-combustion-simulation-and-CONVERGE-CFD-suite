@@ -13,6 +13,7 @@ build/
 # Testing & Environment
 .pytest_cache/
 test_converge_cfd_out/
+scratch_test_out/
 .env
 .venv
 env/
